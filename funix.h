@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "directory.h"
-#include "permission.h"
 
 typedef struct{
 	Directory *currentDir;
@@ -155,14 +154,14 @@ void ls(Funix *funix, char command1[80], char extra[80]){
 	for(i=0;i<funix->currentDir->subN;i++){
 
 		if(strlen(command1)==0)printf("%s	", funix->currentDir->subDir[i]->name);
-		else if(strcmp(command1,"-l")==0)printf("%s	%d	%s	\n",octal[funix->currentDir->subDir[i]->umask], funix->currentDir->subDir[i]->time,funix->currentDir->subDir[i]->name);
+		else if(strcmp(command1,"-l")==0)printf("%s	%d	%s	\n",octal[funix->currentDir->subDir[i]->umask->perm], funix->currentDir->subDir[i]->time,funix->currentDir->subDir[i]->name);
 		else{ 
 			
 			printf("%s : Command not found.\n", command1);
 			return ;
 		}
 	}
-	if(strcmp(command1,"-l")!=0) printf("\n");
+	if(strlen(command1)==0) printf("\n");
 					
 
 }
@@ -192,11 +191,14 @@ void mkdir(Funix *funix, char name1[80], char extra[80]){
 		else{
 
 			Directory *new;
+			Permission *mask;
 			new=(Directory *)malloc(sizeof(Directory));
+			mask=(Permission *)malloc(sizeof(Directory));
 			funix->currentDir->subDir[dNum]=new;
 			funix->currentDir->subDir[dNum]->previousDir=funix->currentDir;
 			funix->currentDir->subDir[dNum]->time=funix->time;
-			funix->currentDir->subDir[dNum]->umask=funix->umask;
+			funix->currentDir->subDir[dNum]->umask=mask;
+			funix->currentDir->subDir[dNum]->umask->perm=funix->umask;
 			strcpy(funix->currentDir->subDir[dNum]->name,name1);
 			funix->currentDir->subN++;
 			for(i=0;i<3;i++){
@@ -217,7 +219,7 @@ void mkdir(Funix *funix, char name1[80], char extra[80]){
 void umask(Funix *funix, char command1[80], char extra[80]){
 
 
-	int i;
+	int i, u, uIn, ifNum=0;
 
 	char *commands[]={"0", "1", "2", "3", "4", "5", "6", "7","unknownInput"};
 
@@ -230,13 +232,30 @@ void umask(Funix *funix, char command1[80], char extra[80]){
 		}
 	}
 
+	char unknowns[10]={'0','1', '2', '3', '4','5', '6', '7','8','9'};
+
 	if(strlen(extra)>0||i==8){
 
-		printf("usage: umask octal(0-7)\n");
+		for(u=0;u<strlen(command1);u++){
+
+			for(uIn=0; uIn<10; uIn++){
+
+				if(command1[u]==unknowns[uIn]){
+
+					break;
+				}
+			}
+			if(uIn==10){
+
+				printf("usage: umask octal\n");
+				return ;
+			}
+		}
+		if(ifNum==0)printf("umask: octal must be between 0 and 7\n");
+			
 		return ;
 	}
 	else funix->umask=i;
-	printf("umask value:%d\n", i);
 		
 
 }
@@ -265,14 +284,14 @@ int processCommand(Funix *funix, char command1[80]){
 
 void run(Funix *funix){
 
-printf(".....||===..||....||..| \\...||..||..\\\\...//.....\n");
-printf(".....||.....||....||..||\\\\..||..||...\\\\.//......\n");
-printf(".....||===..||....||..||.\\\\.||..||....)X(.......\n");
-printf(".....||.....\\\\____//..||..\\\\||..||...//.\\\\......\n");
-printf(".....||......\\____/...||...\\ |..||..//...\\\\.....\n");
+	printf(".....||===..||....||..| \\...||..||..\\\\...//.....\n");
+	printf(".....||.....||....||..||\\\\..||..||...\\\\.//......\n");
+	printf(".....||===..||....||..||.\\\\.||..||....)X(.......\n");
+	printf(".....||.....\\\\____//..||..\\\\||..||...//.\\\\......\n");
+	printf(".....||......\\____/...||...\\ |..||..//...\\\\.....\n");
 
-printf("                     v1.2 \n");
-printf("Creator: Wen Xi Zhang, Hiu Hong Yu \n");
+	printf("                     v1.2 \n");
+	printf("Creator: Wen Xi Zhang, Hiu Hong Yu \n");
 
 
 	funix->time=0;
@@ -298,7 +317,6 @@ printf("Creator: Wen Xi Zhang, Hiu Hong Yu \n");
 
 		init(funix, funix->currentDir);
 
-		printf("umask:%d\n", funix->umask);
 
 		switch(processCommand(funix, command1)){
 
@@ -328,6 +346,7 @@ printf("Creator: Wen Xi Zhang, Hiu Hong Yu \n");
 
 		
 	}
+	return ;
 }
 
 

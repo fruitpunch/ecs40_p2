@@ -9,5 +9,4 @@ int main(){
 
 	run(funix);
 	free(funix);
-	return 0;
 }
